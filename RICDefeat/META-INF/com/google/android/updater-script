@@ -1,0 +1,73 @@
+ui_print(" ");ui_print(" ");
+ui_print("===========================================");
+ui_print("|                                         |");
+ui_print("|         *** Sony RIC Defeat ***         |");
+ui_print("|                                         |");
+ui_print("|            Created by zxz0O0            |");
+ui_print("|       Kernel module by MohammadAG       |");
+ui_print("|                                         |");
+ui_print("===========================================");
+
+ui_print("");
+show_progress(1.000000, 0);
+
+ui_print("Extracting files...");
+package_extract_file("utils/modulecrcpatch", "/tmp/modulecrcpatch");
+package_extract_file("utils/busybox", "/tmp/busybox");
+package_extract_file("utils/installmount.sh", "/tmp/installmount.sh");
+package_extract_file("wp_mod.ko", "/tmp/wp_mod.ko");
+set_perm(0, 0, 0755, "/tmp/modulecrcpatch");
+set_perm(0, 0, 0755, "/tmp/busybox");
+set_perm(0, 0, 0755, "/tmp/installmount.sh");
+set_perm(0, 0, 0644, "/tmp/wp_mod.ko");
+mount("ext4", "EMMC", "/dev/block/platform/msm_sdcc.1/by-name/System", "/System");
+mount("ext4", "EMMC", "/dev/block/platform/msm_sdcc.1/by-name/system", "/system");
+set_progress(0.300000);
+
+ui_print("Patching kernel module");
+if
+	run_program("/tmp/busybox", "ls", "/system/lib/modules/scsi_wait_scan.ko") != "0"
+then
+	if
+		run_program("/tmp/busybox", "ls", "/System/lib/modules/scsi_wait_scan.ko") != "0"
+	then
+		abort("Error finding scsi module");
+	else
+		set_progress(0.400000);
+		if
+			run_program("/tmp/modulecrcpatch", "/System/lib/modules/scsi_wait_scan.ko", "/tmp/wp_mod.ko") != "0"
+		then
+			abort("Error patching kernel module");
+		else
+			set_progress(0.600000);
+			run_program("/tmp/busybox", "cp", "/tmp/wp_mod.ko", "/System/lib/modules/wp_mod.ko");
+			set_progress(0.700000);
+			ui_print("Installing mount hook");
+			assert(run_program("/tmp/installmount.sh", "System") == "0");
+			set_progress(0.800000);
+		endif;
+	endif;
+else
+	set_progress(0.400000);
+	if
+		#todo: dynamically check for kernel modules to read crc
+		run_program("/tmp/modulecrcpatch", "/system/lib/modules/scsi_wait_scan.ko", "/tmp/wp_mod.ko") != "0"
+	then
+		abort("Error patching kernel module");
+	else
+		set_progress(0.600000);
+		run_program("/tmp/busybox", "cp", "/tmp/wp_mod.ko", "/system/lib/modules/wp_mod.ko");
+		set_progress(0.700000);
+		ui_print("Installing mount hook");
+		assert(run_program("/tmp/installmount.sh", "system") == "0");
+		set_progress(0.800000);
+	endif;
+endif;
+
+set_progress(0.900000);
+ui_print("Cleaning up...");
+unmount("/system");
+unmount("/System");
+
+set_progress(1.000000);
+ui_print("Finished!");
