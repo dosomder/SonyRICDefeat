@@ -10,14 +10,16 @@ if [ ! -f /tmp/busybox ]; then
 	exit 1
 fi
 
+system=`ls / | grep -i "system"`
+/tmp/busybox mount /$system
+/tmp/busybox mount /dev/block/platform/msm_sdcc.1/by-name/$system /$system
+
 if [ -f /tmp/modulecrcpatch ]; then
 	for f in /system/lib/modules/*.ko; do
 		/tmp/modulecrcpatch $f /tmp/wp_mod.ko
 	done
 fi
 
-system=`ls / | grep -i "system"`
-mount /$system
 cp /tmp/wp_mod.ko /$system/lib/modules/wp_mod.ko
 chmod 644 /$system/lib/modules/wp_mod.ko
 
